@@ -35,6 +35,6 @@ schema_view=get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include('register.urls')),
-    path('dj-rest-auth/', include('dj_rest_auth.urls')),
+    # path('dj-rest-auth/', include('dj_rest_auth.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger'),
 ]

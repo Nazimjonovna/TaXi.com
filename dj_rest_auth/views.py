@@ -105,7 +105,7 @@ class LoginView(GenericAPIView):
                 context= self.get_serializer_context(),
             )
 
-            user = User.objects.get(number=data['user'])
+            user = User.objects.get(phone=data['user'])
             if user.is_driver == True:
                 serializer.data['user']['is_driver'] = True
             else:

@@ -19,15 +19,15 @@ UserModel = get_user_model()
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=False, allow_blank=True)
-    number = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
     password = serializers.CharField(style={'input_type': 'password'})
 
     def authenticate(self, **kwargs):
         return authenticate(self.context['request'], **kwargs)
 
-    def _validate_email(self, number, password):
-        if number and password:
-            user = self.authenticate(number=number, password=password)
+    def _validate_email(self, phone, password):
+        if phone and password:
+            user = self.authenticate(phone=phone, password=password)
         else:
             msg = _('Must include "number" and "password".')
             raise exceptions.ValidationError(msg)
@@ -43,9 +43,9 @@ class LoginSerializer(serializers.Serializer):
 
         return user
 
-    def _validate_username_email(self, username, number, password):
-        if number and password:
-            user = self.authenticate(number=number, password=password)
+    def _validate_username_email(self, username, phone, password):
+        if phone and password:
+            user = self.authenticate(numberphone=phone, password=password)
         elif username and password:
             user = self.authenticate(username=username, password=password)
         else:
@@ -54,24 +54,24 @@ class LoginSerializer(serializers.Serializer):
 
         return user
 
-    def get_auth_user_using_allauth(self, username, number, password):
+    def get_auth_user_using_allauth(self, username, phone, password):
         from allauth.account import app_settings
 
         # Authentication through email
         if app_settings.AUTHENTICATION_METHOD == app_settings.AuthenticationMethod.EMAIL:
-            return self._validate_email(number, password)
+            return self._validate_email(phone, password)
 
         # Authentication through username
         if app_settings.AUTHENTICATION_METHOD == app_settings.AuthenticationMethod.USERNAME:
             return self._validate_username(username, password)
 
         # Authentication through either username or email
-        return self._validate_username_email(username, number, password)
+        return self._validate_username_email(username, phone, password)
 
-    def get_auth_user_using_orm(self, username, number, password):
-        if number:
+    def get_auth_user_using_orm(self, username, phone, password):
+        if phone:
             try:
-                username = UserModel.objects.get(number__iexact=number).get_username()
+                username = UserModel.objects.get(number__iexact=phone).get_username()
             except UserModel.DoesNotExist:
                 pass
 
@@ -80,17 +80,17 @@ class LoginSerializer(serializers.Serializer):
 
         return None
 
-    def get_auth_user(self, username, number, password):
+    def get_auth_user(self, username, phone, password):
         if 'allauth' in settings.INSTALLED_APPS:
 
             # When `is_active` of a user is set to False, allauth tries to return template html
             # which does not exist. This is the solution for it. See issue #264.
             try:
-                return self.get_auth_user_using_allauth(username, number, password)
+                return self.get_auth_user_using_allauth(username, phone, password)
             except url_exceptions.NoReverseMatch:
                 msg = _('Unable to log in with provided credentials.')
                 raise exceptions.ValidationError(msg)
-        return self.get_auth_user_using_orm(username, number, password)
+        return self.get_auth_user_using_orm(username, phone, password)
 
     @staticmethod
     def validate_auth_user_status(user):
@@ -103,15 +103,15 @@ class LoginSerializer(serializers.Serializer):
         from allauth.account import app_settings
         if (
             app_settings.EMAIL_VERIFICATION == app_settings.EmailVerificationMethod.MANDATORY
-            and not user.emailaddress_set.filter(number=user.number, verified=True).exists()
+            and not user.emailaddress_set.filter(number=user.phone, verified=True).exists()
         ):
             raise serializers.ValidationError(_('E-mail is not verified.'))
 
     def validate(self, attrs):
         username = attrs.get('username')
-        number = attrs.get('number')
+        phone = attrs.get('number')
         password = attrs.get('password')
-        user = self.get_auth_user(username, number, password)
+        user = self.get_auth_user(username, phone, password)
 
         if not user:
             msg = _('Unable to log in with provided credentials.')
@@ -184,7 +184,7 @@ class JWTSerializerWithExpiration(JWTSerializer):
 
 
 class PasswordResetSerializer(serializers.Serializer):
-    number = serializers.CharField()
+    phone = serializers.CharField()
 
     reset_form = None
 

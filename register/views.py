@@ -13,7 +13,7 @@ from drf_yasg.utils import swagger_auto_schema
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from .models import User, Order, UserOrder, Verification, ValidatedOtp
-from .serializers import (Userserializer, DriverAccSerializers, UserOrderSerializer,
+from .serializers import (Userserializer, AccSerializers, UserOrderSerializer,
                           DriverOrderSerializer , SendSmsSerializer, PhoneSerializer,
                           Otpser, ChangePasswordSerializer, VerifyCodeSerializer,
                           ResetPasswordSerializer,)
@@ -231,16 +231,42 @@ class LogoutUserView(APIView):
         }
         return response
 
-class DriverAcc(generics.RetrieveUpdateAPIView):
+# class UserAccountView(APIView):
+#     permission_classes = [IsAuthenticated, ]
+#     parser_classes = [parsers.MultiPartParser]
+#     serializer_class = AccSerializers
+#
+#
+#     # @swagger_auto_schema(request_body=AccSerializers)
+#     # def get(self, request, pk):
+#     #     print("Helloooooo")
+#     #     print("========", pk)
+#     #     return f"ID {pk}"
+#     # permission_classes = [IsAuthenticated, ]
+#     # parser_classes = [parsers.MultiPartParser]
+
+    # def get(self, request, pk):
+    #     try:
+    #         print("15415161615", pk)
+    #         user = User.objects.get(id=pk)
+    #     except User.DoesNotExist:
+    #         return Response(status=status.HTTP_404_NOT_FOUND)
+    #
+    #     if request.method == 'GET':
+    #         serializer = AccSerializers(user)
+    #         return Response(serializer.data)
+
+class UserAccountView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated, ]
     parser_classes = [parsers.MultiPartParser]
     queryset = User.objects.all()
-    serializer_class = DriverAccSerializers
+    serializer_class = AccSerializers
 
-    @swagger_auto_schema(request_body=DriverAccSerializers)
+    @swagger_auto_schema(request_body=AccSerializers)
     def patch(self, request, pk):
+        # print("obj dan oldingi========", pk)
         user = User.objects.get(id=pk)
-        print(user)
+        # print("========", pk)
         if user.phone != request.data['phone']:
             user.phone = request.data.get('phone', user.email)
             us = User.objects.filter(phone=request.data['phone'])
@@ -248,7 +274,7 @@ class DriverAcc(generics.RetrieveUpdateAPIView):
                 user.save()
                 access_token = AccessToken().for_user(user)
                 refresh_token = RefreshToken().for_user(user)
-                serializer = DriverAccSerializers(instance=user, data=request.data, partial=True)
+                serializer = AccSerializers(instance=user, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
                     return Response({
@@ -263,15 +289,14 @@ class DriverAcc(generics.RetrieveUpdateAPIView):
                 return Response({"Mavjud nomer"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             user.save()
-            serializer = DriverAccSerializers(instance=user, data=request.data, partial=True)
+            serializer = AccSerializers(instance=user, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response({
                     "user": serializer.data,
                 })
             else:
-                return Response({'User not found'},
-                                serializer.errors)
+                return Response({'User not found'},serializer.errors)
 
 class ChangePasswordView(generics.UpdateAPIView):
 
@@ -532,3 +557,7 @@ class ChangePhoneNumberConfirm(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# class DataView(APIView):
+#
+#     def get(self, request, pk, *args, **kwargs):
+#         return Response({"id": pk})

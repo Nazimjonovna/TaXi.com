@@ -20,12 +20,12 @@ class Validateser(serializers.ModelSerializer):
 class Userserializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id','username', 'phone', 'password', 'lastname', "is_user", 'is_driver', 'car_marka','car_number',  'pasport', 'image')
+        fields = ('id','username','otp', 'phone', 'password', 'lastname', "is_user", 'is_driver', 'car_marka','car_number',  'pasport', 'image')
 
-class DriverAccSerializers(serializers.ModelSerializer):
+class AccSerializers(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = '__all__'
+        fields = ('username', 'phone', 'password', 'lastname', "is_user", 'is_driver', 'car_marka','car_number',  'pasport', 'image')
 
 class UserOrderSerializer(serializers.ModelSerializer):
     class Meta:
