@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
 # Create your models here.
 from django.db import models
-from colorfield.fields import ColorField
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
@@ -51,7 +50,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         null=True,
         blank=True,
     )
-    # color = ColorField(default='#FF0000', null = True, blank = True)
     username = models.CharField(max_length=200)
     phone_regex = RegexValidator(regex='d{0,9}', message="Telefon raqamini +9989XXXXXXXX kabi kiriting!")
     phone = models.CharField(validators=[phone_regex], max_length=9, unique=True)

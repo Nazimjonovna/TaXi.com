@@ -1,21 +1,15 @@
 from django.urls import path
-# from .views import DataView
 from .views import (Register, LogoutUserView,  OrderView, UserOrderView,
                     SendSms, PhoneView, OtpView, ChangePasswordView,
                     ResetPasswordView, ResetPasswordVerifyCode,
                     ResetPasswordConfirm, ChangePhoneNumber, ChangePhoneNumberVerifyCode,
                     ChangePhoneNumberConfirm, UserAccountView)
-    # DriverOrderView, UserOrderView, OrderView
 
 urlpatterns = [
-    # path('dv/<int:pk>/', DataView.as_view()),
     path('register', Register.as_view()),
     path('logout/', LogoutUserView.as_view()),
     path('acc/<int:pk>/', UserAccountView.as_view()),
-    # path('Account/<int:pk>/', DriverAcc.as_view()),
-    # path("Order_driver/<int:pk>/", OrderView.as_view()),
     path('Order_user/', UserOrderView.as_view()),
-    # path('change_password/<int:pk>/', ChangePasswordView.as_view(), name='auth_change_password'),
     path('password/reset/', ResetPasswordView.as_view()),
     path('password/reset/verify/code/', ResetPasswordVerifyCode.as_view()),
     path('password/reset/confirm/', ResetPasswordConfirm.as_view()),

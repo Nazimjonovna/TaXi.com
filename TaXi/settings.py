@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-+kk5gzj*z49(*@9av^@fk6ypezoy^0#k44pdn0qu)9w$-9i=n4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'rest_framework.authtoken',
+    "corsheaders",
     # 'drf-yasg',
     #mine
     'register',
@@ -51,6 +52,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -189,6 +192,78 @@ REST_USE_JWT = True
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+CORS_ORIGIN_WHITELIST = [
+    "http://localhost:8000",
+    "http://localhost:3000",
+    "https://localhost:3000",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "http://locathost:5173",
+]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://\w+\.example\.com$",
+]
+CORS_ALLOW_ALL_ORIGINS = True
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # """
 # Django settings for TaXi project.

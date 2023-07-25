@@ -4,7 +4,7 @@ from django.conf import settings
 import datetime as d
 from django.utils.translation import gettext_lazy as _
 from random import randint
-from get_sms import Getsms
+# from get_sms import Getsms
 from rest_framework.views import APIView
 from rest_framework import status,  generics, parsers
 from rest_framework.response import Response
@@ -110,22 +110,18 @@ class Register(APIView):
         except Exception as e:
             return Response({"error": str(e)})
 
-        # except:
-        #     return Response({
-        #         "status": False,
-        #         "detail": "Siz bir martalik mahfiy kodni kiritmgansiz. Shuning uchun ro'yhatdan o'ta olmaysiz!"
-        #     })
 
-
-class PhoneView(APIView):
-    queryset = User.objects.all()
+class PhoneView(generics.CreateAPIView):
     serializer_class = PhoneSerializer
+    parser_classes = [parsers.JSONParser, ]
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(request_body=PhoneSerializer, tags=['Register'])
+    @swagger_auto_schema(tags=['Register'])
     def post(self, request, *args, **kwargs):
         phone = request.data.get("phone")
-        if phone.isdigit() and len(phone) > 8:
+        print(phone)
+        print(type(phone))
+        if str(phone).isdigit() and len(str(phone)) > 8:
             user = User.objects.filter(phone__iexact=phone)
             if user.exists():
                 return Response({
@@ -172,7 +168,6 @@ class PhoneView(APIView):
         else:
             return False
 
-
 class OtpView(APIView):
     permission_classes = [AllowAny]
 
@@ -205,6 +200,7 @@ class OtpView(APIView):
             return Response({
                 'error': "Otp aktiv emas yoki mavjud emas, boshqa otp oling"
             })
+        
 
 class ValidatedOtpView(APIView):
     def post(self, request, *args, **kwargs):
@@ -231,31 +227,6 @@ class LogoutUserView(APIView):
         }
         return response
 
-# class UserAccountView(APIView):
-#     permission_classes = [IsAuthenticated, ]
-#     parser_classes = [parsers.MultiPartParser]
-#     serializer_class = AccSerializers
-#
-#
-#     # @swagger_auto_schema(request_body=AccSerializers)
-#     # def get(self, request, pk):
-#     #     print("Helloooooo")
-#     #     print("========", pk)
-#     #     return f"ID {pk}"
-#     # permission_classes = [IsAuthenticated, ]
-#     # parser_classes = [parsers.MultiPartParser]
-
-    # def get(self, request, pk):
-    #     try:
-    #         print("15415161615", pk)
-    #         user = User.objects.get(id=pk)
-    #     except User.DoesNotExist:
-    #         return Response(status=status.HTTP_404_NOT_FOUND)
-    #
-    #     if request.method == 'GET':
-    #         serializer = AccSerializers(user)
-    #         return Response(serializer.data)
-
 class UserAccountView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated, ]
     parser_classes = [parsers.MultiPartParser]
@@ -264,9 +235,7 @@ class UserAccountView(generics.RetrieveUpdateAPIView):
 
     @swagger_auto_schema(request_body=AccSerializers)
     def patch(self, request, pk):
-        # print("obj dan oldingi========", pk)
         user = User.objects.get(id=pk)
-        # print("========", pk)
         if user.phone != request.data['phone']:
             user.phone = request.data.get('phone', user.email)
             us = User.objects.filter(phone=request.data['phone'])
@@ -316,7 +285,6 @@ class OrderView(APIView):
     permission_classes = [IsAuthenticated, ]
     serializer_class = DriverOrderSerializer
 
-    # @swagger_auto_schema(request_body=DriverOrderSerializer)
     def get(self, request, pk):
         try:
             order = Order.objects.get(id=pk)
@@ -557,7 +525,3 @@ class ChangePhoneNumberConfirm(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# class DataView(APIView):
-#
-#     def get(self, request, pk, *args, **kwargs):
-#         return Response({"id": pk})
