@@ -62,6 +62,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     car_number = models.CharField(max_length=200)
     pasport = models.FileField(upload_to='pasport/', null=True, blank=True)
     image = models.FileField(upload_to='images/', null=True, blank=True)
+    is_confirm = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)

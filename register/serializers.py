@@ -6,6 +6,11 @@ class PhoneSerializer(serializers.ModelSerializer):
         model = User
         fields = ('phone',)
 
+class LoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('phone', 'password')
+
 
 class Otpser(serializers.ModelSerializer):
     class Meta:

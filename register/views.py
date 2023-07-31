@@ -2,21 +2,22 @@ from django.shortcuts import render
 import pytz
 from django.conf import settings
 import datetime as d
+from django.contrib.auth import login
 from django.utils.translation import gettext_lazy as _
 from random import randint
-# from get_sms import Getsms
+from get_sms import Getsms
 from rest_framework.views import APIView
 from rest_framework import status,  generics, parsers
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from .models import User, Order, UserOrder, Verification, ValidatedOtp
 from .serializers import (Userserializer, AccSerializers, UserOrderSerializer,
                           DriverOrderSerializer , SendSmsSerializer, PhoneSerializer,
                           Otpser, ChangePasswordSerializer, VerifyCodeSerializer,
-                          ResetPasswordSerializer,)
+                          ResetPasswordSerializer, LoginSerializer)
 
 utc = pytz.timezone(settings.TIME_ZONE)
 min = 1
@@ -96,19 +97,51 @@ class Register(APIView):
                     user_obj = User(phone=request.data['phone'])
                     user_obj.password = request.data['password']
                     user_obj.username=request.data['username']
-                    # user_obj.otp = request.data['otp']
-                    # user_obj.save()
                     serializer.save()
 
             access_token = AccessToken().for_user(user_obj)
             refresh_token = RefreshToken().for_user(user_obj)
-            return Response({
-                "access": str(access_token),
-                "refresh": str(refresh_token),
-                "user": serializer.data,
-            })
+            if user_obj.is_confirm == True:
+                return Response({
+                    "access": str(access_token),
+                    "refresh": str(refresh_token),
+                    "user": serializer.data,
+                })
+            else:
+                return Response({
+                    'Message':'Hujjatlaringizni tasdiqlanishini kuting!',
+                    "access": str(access_token),
+                    "refresh": str(refresh_token),
+                    "user": serializer.data,
+                })
         except Exception as e:
             return Response({"error": str(e)})
+
+
+class LoginView(generics.GenericAPIView):
+    permission_classes = [AllowAny, ]
+    serializer_class = LoginSerializer
+
+    @swagger_auto_schema(request_body=LoginSerializer)
+    def post(self, request):
+        try:
+            user = User.objects.get(phone=request.data['phone'])
+            if user.is_confirm == True:
+                if check_password(request.data['password'], user.password):
+                    user = User.objects.get(phone=request.data['phone'])
+                    access_token = AccessToken().for_user(user)
+                    refresh_token = RefreshToken().for_user(user)
+                    return Response({
+                        "id": user.id,
+                        "access": str(access_token),
+                        "refresh": str(refresh_token),
+                    })
+                else:
+                    return Response({'Xato': "Noto'g'ri password kiritdingiz :("})
+            else:
+                return  Response({"Message":"Sizning hujjatlaringiz hali tasdiqlanmadi!"})
+        except:
+            return Response({'Xato': 'Bunday user mavjud emas :('})
 
 
 class PhoneView(generics.CreateAPIView):
@@ -119,8 +152,6 @@ class PhoneView(generics.CreateAPIView):
     @swagger_auto_schema(tags=['Register'])
     def post(self, request, *args, **kwargs):
         phone = request.data.get("phone")
-        print(phone)
-        print(type(phone))
         if str(phone).isdigit() and len(str(phone)) > 8:
             user = User.objects.filter(phone__iexact=phone)
             if user.exists():
@@ -200,7 +231,6 @@ class OtpView(APIView):
             return Response({
                 'error': "Otp aktiv emas yoki mavjud emas, boshqa otp oling"
             })
-        
 
 class ValidatedOtpView(APIView):
     def post(self, request, *args, **kwargs):
@@ -227,6 +257,8 @@ class LogoutUserView(APIView):
         }
         return response
 
+
+
 class UserAccountView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated, ]
     parser_classes = [parsers.MultiPartParser]
@@ -236,36 +268,39 @@ class UserAccountView(generics.RetrieveUpdateAPIView):
     @swagger_auto_schema(request_body=AccSerializers)
     def patch(self, request, pk):
         user = User.objects.get(id=pk)
-        if user.phone != request.data['phone']:
-            user.phone = request.data.get('phone', user.email)
-            us = User.objects.filter(phone=request.data['phone'])
-            if not us.exists():
+        if user.is_confirm == True:
+            if user.phone != request.data['phone']:
+                user.phone = request.data.get('phone', user.email)
+                us = User.objects.filter(phone=request.data['phone'])
+                if not us.exists():
+                    user.save()
+                    access_token = AccessToken().for_user(user)
+                    refresh_token = RefreshToken().for_user(user)
+                    serializer = AccSerializers(instance=user, data=request.data, partial=True)
+                    if serializer.is_valid():
+                        serializer.save()
+                        return Response({
+                            "access_token": str(access_token),
+                            "refresh_token": str(refresh_token),
+                            "user": serializer.data,
+                        })
+                    else:
+                        return Response({'User not found'},
+                                        serializer.errors)
+                else:
+                    return Response({"Mavjud nomer"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
                 user.save()
-                access_token = AccessToken().for_user(user)
-                refresh_token = RefreshToken().for_user(user)
                 serializer = AccSerializers(instance=user, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
                     return Response({
-                        "access_token": str(access_token),
-                        "refresh_token": str(refresh_token),
                         "user": serializer.data,
                     })
                 else:
-                    return Response({'User not found'},
-                                    serializer.errors)
-            else:
-                return Response({"Mavjud nomer"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'User not found'},serializer.errors)
         else:
-            user.save()
-            serializer = AccSerializers(instance=user, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response({
-                    "user": serializer.data,
-                })
-            else:
-                return Response({'User not found'},serializer.errors)
+            return Response({"Message":"Sizning hujjatingiz hali tasdiqlanmadi"})
 
 class ChangePasswordView(generics.UpdateAPIView):
 
@@ -285,6 +320,7 @@ class OrderView(APIView):
     permission_classes = [IsAuthenticated, ]
     serializer_class = DriverOrderSerializer
 
+    # @swagger_auto_schema(request_body=DriverOrderSerializer)
     def get(self, request, pk):
         try:
             order = Order.objects.get(id=pk)
@@ -321,36 +357,39 @@ class UserOrderView(APIView):
     @swagger_auto_schema(request_body=UserOrderSerializer)
     def post(self, request, *args, **kwargs):
         user = User.objects.get(id=request.data['user'])
-        if user.is_user:
-            serializer = UserOrderSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                order = Order.objects.get(id=request.data['oder_id'])
-                qiymat = order.place - int(request.data['place'])
-                if qiymat> 0:
-                    serializer.validated_data['status']='pending'
+        if user.is_confirm == True:
+            if user.is_user:
+                serializer = UserOrderSerializer(data=request.data)
+                if serializer.is_valid():
                     serializer.save()
-                    order.place = order.place - int(request.data['place'])
-                    order.save()
-                    return Response(
-                        serializer.data,
-                    )
-                elif qiymat==0:
-                    serializer.validated_data['status']='closed'
-                    serializer.save()
-                    order.place = order.place - int(request.data['place'])
-                    order.save()
-                    return Response(
-                        serializer.data,
-                    )
-                elif qiymat<0:
-                    serializer.save()
-                    return Response({
-                        "Message":'Uzr Bu Buyurtmada joy yetarli emas!'
-                    })
-                return Response(serializer.data)
-            else:
-                return Response(serializer.errors)
+                    order = Order.objects.get(id=request.data['oder_id'])
+                    qiymat = order.place - int(request.data['place'])
+                    if qiymat> 0:
+                        serializer.validated_data['status']='pending'
+                        serializer.save()
+                        order.place = order.place - int(request.data['place'])
+                        order.save()
+                        return Response(
+                            serializer.data,
+                        )
+                    elif qiymat==0:
+                        serializer.validated_data['status']='closed'
+                        serializer.save()
+                        order.place = order.place - int(request.data['place'])
+                        order.save()
+                        return Response(
+                            serializer.data,
+                        )
+                    elif qiymat<0:
+                        serializer.save()
+                        return Response({
+                            "Message":'Uzr Bu Buyurtmada joy yetarli emas!'
+                        })
+                    return Response(serializer.data)
+                else:
+                    return Response(serializer.errors)
+        else:
+            return  Response({"Message":"Sizning hujjatingiz hali tasdiqlanmadi"})
 
 class VerifyCodeView(APIView):
     serializer_class = VerifyCodeSerializer
@@ -525,3 +564,7 @@ class ChangePhoneNumberConfirm(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# class DataView(APIView):
+#
+#     def get(self, request, pk, *args, **kwargs):
+#         return Response({"id": pk})
